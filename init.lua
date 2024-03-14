@@ -89,6 +89,8 @@ P.S. You can delete this when you're done too. It's your config now! :)
 --  NOTE: Must happen before plugins are loaded (otherwise wrong leader will be used)
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
+vim.g.loaded_netrw = 1
+vim.g.loaded_netrwPlugin = 1
 
 -- Set to true if you have a Nerd Font installed
 vim.g.have_nerd_font = false
@@ -255,6 +257,18 @@ require('lazy').setup({
     },
   },
 
+  {
+    'nvim-tree/nvim-tree.lua',
+    version = '*',
+    lazy = false,
+    dependencies = {
+      'nvim-tree/nvim-web-devicons',
+    },
+    config = function()
+      require('nvim-tree').setup {}
+    end,
+  },
+
   -- NOTE: Plugins can also be configured to run lua code when they are loaded.
   --
   -- This is often very useful to both group configuration, as well as handle
@@ -344,15 +358,17 @@ require('lazy').setup({
         -- You can put your default mappings / updates / etc. in here
         --  All the info you're looking for is in `:help telescope.setup()`
         --
-        -- defaults = {
-        --   mappings = {
-        --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
-        --   },
-        -- },
+        defaults = {
+          sorting_strategy = 'ascending',
+        },
         -- pickers = {}
         extensions = {
           ['ui-select'] = {
             require('telescope.themes').get_dropdown(),
+          },
+          file_browser = {
+            theme = 'ivy',
+            hijack_netrw = true,
           },
         },
       }
@@ -360,6 +376,7 @@ require('lazy').setup({
       -- Enable telescope extensions, if they are installed
       pcall(require('telescope').load_extension, 'fzf')
       pcall(require('telescope').load_extension, 'ui-select')
+      pcall(require('telescope').load_extension, 'file_browser')
 
       -- See `:help telescope.builtin`
       local builtin = require 'telescope.builtin'
@@ -397,6 +414,75 @@ require('lazy').setup({
         builtin.find_files { cwd = vim.fn.stdpath 'config' }
       end, { desc = '[S]earch [N]eovim files' })
     end,
+  },
+
+  {
+    'nvim-telescope/telescope-file-browser.nvim',
+    dependencies = { 'nvim-telescope/telescope.nvim', 'nvim-lua/plenary.nvim' },
+    config = function()
+      vim.keymap.set('n', '<leader>fb', ':Telescope file_browser path=%:p:h select_buffer=true <CR>', { noremap = true })
+    end,
+  },
+
+  {
+    'theprimeagen/harpoon',
+    branch = 'harpoon2',
+    dependencies = { 'nvim-lua/plenary.nvim' },
+    config = function()
+      require('harpoon'):setup()
+    end,
+    keys = {
+      {
+        '<leader>a',
+        function()
+          require('harpoon'):list():append()
+        end,
+        desc = 'harpoon file',
+      },
+      {
+        '<leader>e',
+        function()
+          local harpoon = require 'harpoon'
+          harpoon.ui:toggle_quick_menu(harpoon:list())
+        end,
+        desc = 'harpoon quick menu',
+      },
+      {
+        '<leader>1',
+        function()
+          require('harpoon'):list():select(1)
+        end,
+        desc = 'harpoon to file 1',
+      },
+      {
+        '<leader>2',
+        function()
+          require('harpoon'):list():select(2)
+        end,
+        desc = 'harpoon to file 2',
+      },
+      {
+        '<leader>3',
+        function()
+          require('harpoon'):list():select(3)
+        end,
+        desc = 'harpoon to file 3',
+      },
+      {
+        '<leader>4',
+        function()
+          require('harpoon'):list():select(4)
+        end,
+        desc = 'harpoon to file 4',
+      },
+      {
+        '<leader>5',
+        function()
+          require('harpoon'):list():select(5)
+        end,
+        desc = 'harpoon to file 5',
+      },
+    },
   },
 
   { -- LSP Configuration & Plugins
@@ -571,6 +657,31 @@ require('lazy').setup({
             },
           },
         },
+
+        -- yamlls = {
+        --   settings = {
+        --     yaml = {
+        --       validate = true,
+        --       completion = true,
+        --       schemas = {
+        --         kubernetes = '*.yaml',
+        --         ['http://json.schemastore.org/github-workflow'] = '.github/workflows/*',
+        --         ['http://json.schemastore.org/github-action'] = '.github/action.{yml,yaml}',
+        --         ['https://raw.githubusercontent.com/microsoft/azure-pipelines-vscode/master/service-schema.json'] = 'azure-pipelines.yml',
+        --         ['http://json.schemastore.org/ansible-stable-2.9'] = 'roles/tasks/*.{yml,yaml}',
+        --         ['http://json.schemastore.org/prettierrc'] = '.prettierrc.{yml,yaml}',
+        --         ['http://json.schemastore.org/kustomization'] = 'kustomization.{yml,yaml}',
+        --         ['http://json.schemastore.org/ansible-playbook'] = '*play*.{yml,yaml}',
+        --         ['http://json.schemastore.org/chart'] = 'Chart.{yml,yaml}',
+        --         ['https://json.schemastore.org/dependabot-v2'] = '.github/dependabot.{yml,yaml}',
+        --         ['https://gitlab.com/gitlab-org/gitlab/-/raw/master/app/assets/javascripts/editor/schema/ci.json'] = '*gitlab-ci*.{yml,yaml}',
+        --         ['https://raw.githubusercontent.com/OAI/OpenAPI-Specification/main/schemas/v3.1/schema.json'] = '*api*.{yml,yaml}',
+        --         ['https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json'] = '*docker-compose*.{yml,yaml}',
+        --         ['https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json'] = '*flow*.{yml,yaml}',
+        --       },
+        --     },
+        --   },
+        -- },
       }
 
       -- Ensure the servers and tools above are installed
@@ -794,6 +905,16 @@ require('lazy').setup({
         indent = { enable = true },
       }
 
+      local parser_config = require('nvim-treesitter.parsers').get_parser_configs()
+      parser_config.gotmpl = {
+        install_info = {
+          url = 'https://github.com/ngalaiko/tree-sitter-go-template',
+          files = { 'src/parser.c' },
+        },
+        filetype = 'gotmpl',
+        used_by = { 'gohtmltmpl', 'gotexttmpl', 'gotmpl' },
+        -- used_by = { 'gohtmltmpl', 'gotexttmpl', 'gotmpl', 'yaml' },
+      }
       -- There are additional nvim-treesitter modules that you can use to interact
       -- with nvim-treesitter. You should go explore a few and see what interests you:
       --
@@ -802,6 +923,8 @@ require('lazy').setup({
       --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
     end,
   },
+
+  { 'towolf/vim-helm', ft = 'helm' },
 
   -- The following two comments only work if you have downloaded the kickstart repo, not just copy pasted the
   -- init.lua. If you want these files, they are in the repository, so you can just download them and
